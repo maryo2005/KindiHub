@@ -4,7 +4,7 @@
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'temporary_key_for_build',
 });
 
 // ---- PROMPT OPTIMIZADO PARA AHORRO DE TOKENS ----
