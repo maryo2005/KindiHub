@@ -1,10 +1,11 @@
-// ============================================
-// OpenAI Client + Prompts optimizados
-// ============================================
 import OpenAI from 'openai';
 
+const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || 'temporary_key_for_build';
+const isGroq = apiKey.startsWith('gsk_') || !!process.env.GROQ_API_KEY;
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'temporary_key_for_build',
+  apiKey,
+  baseURL: isGroq ? 'https://api.groq.com/openai/v1' : undefined,
 });
 
 // ---- PROMPT OPTIMIZADO PARA AHORRO DE TOKENS ----
@@ -30,7 +31,7 @@ Nivel observado: ${nivel}
 Observación: ${observacion}`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: isGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 250,
     temperature: 0.3,
@@ -75,7 +76,7 @@ Genera:
 No inventes datos. Basa todo en las evidencias proporcionadas.`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: isGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 400,
     temperature: 0.3,
@@ -95,7 +96,7 @@ export async function transcribeAudio(audioBuffer, filename = 'audio.webm') {
   
   const transcription = await openai.audio.transcriptions.create({
     file: file,
-    model: 'whisper-1',
+    model: isGroq ? 'whisper-large-v3' : 'whisper-1',
     language: 'es',
   });
 
@@ -116,7 +117,7 @@ Criterios:
 ${criteriosDisponibles.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: isGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 10,
     temperature: 0.1,
