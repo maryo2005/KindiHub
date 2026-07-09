@@ -24,11 +24,6 @@ export default function CuadernoDetailPage({ params }) {
     area: '', competency: '', standard: '', capacities: '', criteria: ['']
   });
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchData();
-  }, [status]);
-
   const fetchData = async () => {
     try {
       const [nbRes, sessRes] = await Promise.all([
@@ -46,6 +41,15 @@ export default function CuadernoDetailPage({ params }) {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+    }
+  }, [status]);
 
   const handleCreateSession = async (e) => {
     e.preventDefault();

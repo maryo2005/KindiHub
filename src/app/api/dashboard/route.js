@@ -20,7 +20,7 @@ export async function GET() {
       prisma.student.count({ where: { classroom: { userId } } }),
       prisma.evidence.count({ where: { session: { notebook: { classroom: { userId } } } } }),
       prisma.evidence.count({ where: { status: 'pendiente', session: { notebook: { classroom: { userId } } } } }),
-      prisma.evidence.count({ where: { status: 'confirmada', session: { notebook: { classroom: { userId } } } } }),
+      prisma.evidence.count({ where: { status: { in: ['confirmada', 'corregida'] }, session: { notebook: { classroom: { userId } } } } }),
       prisma.session.count({ where: { status: 'activa', notebook: { classroom: { userId } } } }),
     ]);
 

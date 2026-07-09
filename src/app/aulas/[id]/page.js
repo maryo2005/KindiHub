@@ -20,11 +20,6 @@ export default function AulaDetailPage({ params }) {
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkNames, setBulkNames] = useState('');
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchData();
-  }, [status]);
-
   const fetchData = async () => {
     const [studentsRes, classroomsRes] = await Promise.all([
       fetch(`/api/students?classroomId=${id}`),
@@ -37,6 +32,15 @@ export default function AulaDetailPage({ params }) {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+    }
+  }, [status]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();

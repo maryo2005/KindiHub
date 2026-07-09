@@ -19,6 +19,7 @@ export default function ActiveSessionPage({ params }) {
   const [selectedLevel, setSelectedLevel] = useState('');
   const [showCapture, setShowCapture] = useState(null); // 'audio', 'photo', 'video', 'text'
   const [observation, setObservation] = useState('');
+  const [transcription, setTranscription] = useState('');
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
@@ -36,11 +37,6 @@ export default function ActiveSessionPage({ params }) {
   const [capturedFile, setCapturedFile] = useState(null);
   const [capturedPreview, setCapturedPreview] = useState(null);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchSession();
-  }, [status]);
-
   const fetchSession = async () => {
     const res = await fetch(`/api/sessions/${id}`);
     if (res.ok) {
@@ -49,6 +45,15 @@ export default function ActiveSessionPage({ params }) {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchSession();
+      }, 0);
+    }
+  }, [status]);
 
   // ---- AUDIO RECORDING ----
   const startRecording = async () => {
@@ -65,6 +70,12 @@ export default function ActiveSessionPage({ params }) {
       mediaRecorder.onstop = async () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach(t => t.stop());
+        
+        // Save recording as file state
+        const file = new File([blob], 'grabacion_audio.webm', { type: 'audio/webm' });
+        setCapturedFile(file);
+        setCapturedPreview(URL.createObjectURL(blob));
+        
         await processAudio(blob);
       };
 
@@ -88,30 +99,24 @@ export default function ActiveSessionPage({ params }) {
   const processAudio = async (audioBlob) => {
     setAiLoading(true);
     try {
-      // 1. Upload audio
-      const uploadForm = new FormData();
-      uploadForm.append('file', audioBlob, 'audio.webm');
-      uploadForm.append('type', 'audio');
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-      const uploadData = await uploadRes.json();
-
-      // 2. Transcribe with Whisper
+      // 1. Transcribe with Whisper
       const transcribeForm = new FormData();
       transcribeForm.append('audio', audioBlob, 'audio.webm');
       const transcribeRes = await fetch('/api/ai/transcribe', { method: 'POST', body: transcribeForm });
       
-      let transcription = '';
+      let transcriptionText = '';
       if (transcribeRes.ok) {
         const transcribeData = await transcribeRes.json();
-        transcription = transcribeData.transcription;
+        transcriptionText = transcribeData.transcription;
       }
 
-      setObservation(transcription || 'Audio capturado');
+      setTranscription(transcriptionText);
+      setObservation(transcriptionText || 'Audio capturado');
       setShowCapture('review');
       
-      // 3. Generate evidence with AI
-      if (transcription) {
-        await generateAIEvidence(transcription);
+      // 2. Generate evidence with AI
+      if (transcriptionText) {
+        await generateAIEvidence(transcriptionText);
       }
     } catch (err) {
       console.error('Error procesando audio:', err);
@@ -178,6 +183,7 @@ export default function ActiveSessionPage({ params }) {
               showCapture === 'photo' ? 'foto' : showCapture === 'video' ? 'video' : 'texto',
         level: selectedLevel || undefined,
         observation: observation,
+        transcription: transcription || undefined,
         aiDescription: useAI ? aiResult?.description : undefined,
         aiFeedback: useAI ? aiResult?.feedback : undefined,
         confirmedDescription: useAI ? aiResult?.description : observation,
@@ -198,12 +204,19 @@ export default function ActiveSessionPage({ params }) {
           const form = new FormData();
           form.append('file', capturedFile);
           form.append('evidenceId', evidence.id);
-          form.append('type', capturedFile.type.startsWith('image') ? 'foto' : 'video');
+          
+          let detectType = 'texto';
+          if (capturedFile.type.startsWith('image/')) detectType = 'foto';
+          else if (capturedFile.type.startsWith('audio/')) detectType = 'audio';
+          else if (capturedFile.type.startsWith('video/')) detectType = 'video';
+          
+          form.append('type', detectType);
           await fetch('/api/upload', { method: 'POST', body: form });
         }
 
         // Reset
         setObservation('');
+        setTranscription('');
         setSelectedLevel('');
         setShowCapture(null);
         setCapturedFile(null);
@@ -378,9 +391,11 @@ export default function ActiveSessionPage({ params }) {
                 {showCapture === 'review' ? '🔍 Revisar Captura' : '✏️ Observación Escrita'}
               </h3>
               {capturedPreview && (
-                <div className="mb-4" style={{ borderRadius: 'var(--border-radius-md)', overflow: 'hidden' }}>
+                <div className="mb-4 flex justify-center" style={{ borderRadius: 'var(--border-radius-md)', overflow: 'hidden' }}>
                   {capturedFile?.type?.startsWith('image') ? (
                     <img src={capturedPreview} alt="Captura" style={{ maxHeight: 200, objectFit: 'cover', width: '100%' }} />
+                  ) : capturedFile?.type?.startsWith('audio') ? (
+                    <audio src={capturedPreview} controls style={{ width: '100%' }} />
                   ) : (
                     <video src={capturedPreview} controls style={{ maxHeight: 200, width: '100%' }} />
                   )}
@@ -402,7 +417,7 @@ export default function ActiveSessionPage({ params }) {
                   </button>
                 )}
                 <button className="btn btn-ghost"
-                  onClick={() => { setShowCapture(null); setObservation(''); setCapturedFile(null); setCapturedPreview(null); }}>
+                  onClick={() => { setShowCapture(null); setObservation(''); setTranscription(''); setCapturedFile(null); setCapturedPreview(null); }}>
                   Cancelar
                 </button>
               </div>
@@ -453,6 +468,28 @@ export default function ActiveSessionPage({ params }) {
                     <div className="evidence-card-body">
                       {ev.confirmedDescription || ev.aiDescription || ev.observation || 'Sin observación'}
                     </div>
+                    {ev.files?.length > 0 && (
+                      <div className="mt-2 flex flex-col gap-2" style={{ padding: '0 var(--space-3)' }}>
+                        {ev.files.map(file => (
+                          <div key={file.id} className="media-preview" style={{ maxWidth: '100%' }}>
+                            {file.fileType.startsWith('image/') && (
+                              <img src={file.filePath} alt="Adjunto" style={{ borderRadius: 'var(--border-radius-md)', width: '100%', maxHeight: '150px', objectFit: 'cover' }} />
+                            )}
+                            {file.fileType.startsWith('audio/') && (
+                              <audio controls src={file.filePath} style={{ width: '100%' }} />
+                            )}
+                            {file.fileType.startsWith('video/') && (
+                              <video controls src={file.filePath} style={{ width: '100%', maxHeight: '150px' }} />
+                            )}
+                            {!file.fileType.startsWith('image/') && !file.fileType.startsWith('audio/') && !file.fileType.startsWith('video/') && (
+                              <a href={file.filePath} download className="btn btn-outline btn-sm flex items-center justify-center gap-2">
+                                📄 Descargar archivo
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="evidence-card-footer">
                       <div className="evidence-card-tags">
                         {ev.level && (

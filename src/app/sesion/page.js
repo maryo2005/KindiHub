@@ -22,11 +22,6 @@ export default function SesionesPage() {
     area: '', competency: '', standard: '', capacities: '', notebookId: '', criteria: ['']
   });
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchData();
-  }, [status]);
-
   const fetchData = async () => {
     const [sessRes, classRes] = await Promise.all([
       fetch('/api/sessions'),
@@ -36,6 +31,15 @@ export default function SesionesPage() {
     if (classRes.ok) setClassrooms(await classRes.json());
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+    }
+  }, [status]);
 
   const fetchNotebooks = async (classroomId) => {
     setSelectedClassroom(classroomId);

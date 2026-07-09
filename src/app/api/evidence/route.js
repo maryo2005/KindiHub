@@ -23,7 +23,13 @@ export async function GET(request) {
     const where = {};
     if (sessionId) where.sessionId = sessionId;
     if (studentId) where.studentId = studentId;
-    if (status) where.status = status;
+    if (status) {
+      if (status === 'confirmada') {
+        where.status = { in: ['confirmada', 'corregida'] };
+      } else {
+        where.status = status;
+      }
+    }
     if (type) where.type = type;
     if (level) where.level = level;
 

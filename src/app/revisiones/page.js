@@ -17,16 +17,20 @@ export default function RevisionesPage() {
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(null);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchEvidences();
-  }, [status]);
-
   const fetchEvidences = async () => {
     const res = await fetch('/api/evidence');
     if (res.ok) setEvidences(await res.json());
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchEvidences();
+      }, 0);
+    }
+  }, [status]);
 
   const updateEvidence = async (id, data) => {
     setSaving(true);
@@ -81,12 +85,14 @@ export default function RevisionesPage() {
     return <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}><div className="spinner spinner-lg"></div></div>;
   }
 
-  const filtered = filter === 'all' ? evidences : evidences.filter(e => e.status === filter);
+  const filtered = filter === 'all' ? evidences : 
+                   filter === 'confirmada' ? evidences.filter(e => e.status === 'confirmada' || e.status === 'corregida') : 
+                   evidences.filter(e => e.status === filter);
   const counts = {
     all: evidences.length,
     pendiente: evidences.filter(e => e.status === 'pendiente').length,
     revisada: evidences.filter(e => e.status === 'revisada').length,
-    confirmada: evidences.filter(e => e.status === 'confirmada').length,
+    confirmada: evidences.filter(e => e.status === 'confirmada' || e.status === 'corregida').length,
   };
 
   return (
@@ -154,6 +160,30 @@ export default function RevisionesPage() {
                 </div>
               )}
 
+              {/* Adjuntos multimedia */}
+              {ev.files?.length > 0 && (
+                <div className="mb-3 flex flex-col gap-2">
+                  {ev.files.map(file => (
+                    <div key={file.id} className="media-preview" style={{ maxWidth: '400px' }}>
+                      {file.fileType.startsWith('image/') && (
+                        <img src={file.filePath} alt="Adjunto" style={{ borderRadius: 'var(--border-radius-md)', width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
+                      )}
+                      {file.fileType.startsWith('audio/') && (
+                        <audio controls src={file.filePath} style={{ width: '100%' }} />
+                      )}
+                      {file.fileType.startsWith('video/') && (
+                        <video controls src={file.filePath} style={{ width: '100%', maxHeight: '200px' }} />
+                      )}
+                      {!file.fileType.startsWith('image/') && !file.fileType.startsWith('audio/') && !file.fileType.startsWith('video/') && (
+                        <a href={file.filePath} download className="btn btn-outline btn-sm flex items-center justify-center gap-2">
+                          📄 Descargar archivo
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Sugerencia IA */}
               {(ev.aiDescription || ev.aiFeedback) && (
                 <div className="ai-suggestion mb-3" style={{ padding: 'var(--space-3)' }}>
@@ -202,7 +232,7 @@ export default function RevisionesPage() {
                   </div>
                   <div className="flex gap-2">
                     <button className={`btn btn-success btn-sm ${saving ? 'btn-loading' : ''}`}
-                      onClick={() => updateEvidence(ev.id, { ...editForm, status: 'corregida' })} disabled={saving}>
+                      onClick={() => updateEvidence(ev.id, { ...editForm, status: 'confirmada' })} disabled={saving}>
                       ✅ Confirmar
                     </button>
                     <button className="btn btn-outline btn-sm" onClick={() => setEditingId(null)}>Cancelar</button>

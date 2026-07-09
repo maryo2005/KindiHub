@@ -16,10 +16,11 @@ export default function SeguimientoPage() {
   const [selectedClassroom, setSelectedClassroom] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchData();
-  }, [status]);
+  const fetchStudents = async (classroomId) => {
+    setSelectedClassroom(classroomId);
+    const res = await fetch(`/api/students?classroomId=${classroomId}`);
+    if (res.ok) setStudents(await res.json());
+  };
 
   const fetchData = async () => {
     const [clRes, evRes] = await Promise.all([
@@ -38,11 +39,14 @@ export default function SeguimientoPage() {
     setLoading(false);
   };
 
-  const fetchStudents = async (classroomId) => {
-    setSelectedClassroom(classroomId);
-    const res = await fetch(`/api/students?classroomId=${classroomId}`);
-    if (res.ok) setStudents(await res.json());
-  };
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+    }
+  }, [status]);
 
   if (loading) {
     return <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}><div className="spinner spinner-lg"></div></div>;

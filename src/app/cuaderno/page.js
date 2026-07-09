@@ -18,11 +18,6 @@ export default function CuadernoPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchData();
-  }, [status]);
-
   const fetchData = async () => {
     const [nbRes, clRes] = await Promise.all([
       fetch('/api/notebooks'),
@@ -32,6 +27,15 @@ export default function CuadernoPage() {
     if (clRes.ok) setClassrooms(await clRes.json());
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+    }
+  }, [status]);
 
   const handleCreate = async (e) => {
     e.preventDefault();

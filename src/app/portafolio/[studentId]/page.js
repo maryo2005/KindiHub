@@ -32,6 +32,7 @@ export default function StudentPortfolioPage({ params }) {
     criteriaId: '',
     level: '',
     observation: '',
+    transcription: '',
     type: 'texto', // texto, audio, foto, video, marcacion
     aiDescription: '',
     aiFeedback: '',
@@ -51,15 +52,6 @@ export default function StudentPortfolioPage({ params }) {
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-    if (status === 'authenticated') {
-      fetchData();
-    }
-  }, [status]);
 
   const fetchData = async () => {
     try {
@@ -90,6 +82,17 @@ export default function StudentPortfolioPage({ params }) {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+    }
+  }, [status]);
 
   // When session selection changes, update criteria
   const handleSessionChange = (sessId) => {
@@ -153,7 +156,11 @@ export default function StudentPortfolioPage({ params }) {
         transcription = transcribeData.transcription;
       }
 
-      setForm(prev => ({ ...prev, observation: transcription || 'Audio grabado' }));
+      setForm(prev => ({ 
+        ...prev, 
+        observation: transcription || 'Audio grabado',
+        transcription: transcription
+      }));
       
       // Auto generate with AI if transcription was successful
       if (transcription) {
@@ -236,6 +243,7 @@ export default function StudentPortfolioPage({ params }) {
         type: form.type,
         level: form.level || undefined,
         observation: form.observation,
+        transcription: form.transcription || undefined,
         aiDescription: form.aiDescription || undefined,
         aiFeedback: form.aiFeedback || undefined,
         confirmedDescription: form.confirmedDescription || form.observation,
@@ -268,6 +276,7 @@ export default function StudentPortfolioPage({ params }) {
           criteriaId: '',
           level: '',
           observation: '',
+          transcription: '',
           type: 'texto',
           aiDescription: '',
           aiFeedback: '',
@@ -543,7 +552,7 @@ export default function StudentPortfolioPage({ params }) {
                       {!selectedFile?.type.startsWith('image/') && !selectedFile?.type.startsWith('audio/') && !selectedFile?.type.startsWith('video/') && (
                         <div className="text-sm font-semibold text-primary">📄 {selectedFile?.name}</div>
                       )}
-                      <button type="button" className="btn btn-ghost btn-sm mt-2 text-error" onClick={() => { setSelectedFile(null); setFilePreview(null); setForm(prev => ({ ...prev, type: 'texto' })); }}>
+                      <button type="button" className="btn btn-ghost btn-sm mt-2 text-error" onClick={() => { setSelectedFile(null); setFilePreview(null); setForm(prev => ({ ...prev, type: 'texto', transcription: '' })); }}>
                         Quitar archivo
                       </button>
                     </div>

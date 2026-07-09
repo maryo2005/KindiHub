@@ -1,12 +1,14 @@
 'use client';
 // ============================================
-// Página de Login
+// Página de Registro de Usuario
 // ============================================
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,18 +20,39 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    const result = await signIn('credentials', {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    if (result?.error) {
-      setError(result.error);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al registrar usuario');
+      }
+
+      // Registro exitoso, iniciar sesión automáticamente
+      const loginResult = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (loginResult?.error) {
+        setError('Registro completo, pero ocurrió un error al iniciar sesión automáticamente. Por favor inicia sesión manualmente.');
+        setLoading(false);
+        setTimeout(() => {
+          router.push('/login');
+        }, 3000);
+      } else {
+        router.push('/');
+        router.refresh();
+      }
+    } catch (err) {
+      setError(err.message);
       setLoading(false);
-    } else {
-      router.push('/');
-      router.refresh();
     }
   };
 
@@ -39,14 +62,27 @@ export default function LoginPage() {
         <div className="login-logo">
           <div className="login-logo-icon">🎓</div>
           <h1 className="login-title">KindiHub</h1>
-          <p className="login-subtitle">Plataforma de Evaluación — Educación Inicial</p>
+          <p className="login-subtitle">Crear Cuenta de Docente — Educación Inicial</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="login-email">Correo electrónico</label>
+            <label className="form-label" htmlFor="register-name">Nombre completo</label>
             <input
-              id="login-email"
+              id="register-name"
+              type="text"
+              className="form-input"
+              placeholder="María Pérez"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="register-email">Correo electrónico</label>
+            <input
+              id="register-email"
               type="email"
               className="form-input"
               placeholder="docente@kindihub.edu.pe"
@@ -57,9 +93,9 @@ export default function LoginPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="login-password">Contraseña</label>
+            <label className="form-label" htmlFor="register-password">Contraseña</label>
             <input
-              id="login-password"
+              id="register-password"
               type="password"
               className="form-input"
               placeholder="••••••••"
@@ -80,53 +116,25 @@ export default function LoginPage() {
             type="submit"
             className={`btn btn-primary btn-full btn-lg ${loading ? 'btn-loading' : ''}`}
             disabled={loading}
-            id="btn-login"
+            id="btn-register"
           >
             {loading ? (
               <>
                 <span className="spinner spinner-sm"></span>
-                Ingresando...
+                Registrando...
               </>
             ) : (
-              'Iniciar Sesión'
+              'Registrarse y Comenzar'
             )}
           </button>
         </form>
 
         <div style={{ marginTop: 'var(--space-6)', textAlign: 'center' }}>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            ¿No tienes una cuenta?{' '}
-            <a href="/register" style={{ color: 'var(--primary-color)', fontWeight: '600', textDecoration: 'none' }}>
-              Regístrate aquí
-            </a>
-          </p>
-
-          <div style={{ 
-            height: 1, 
-            background: 'var(--border-color)', 
-            margin: 'var(--space-4) 0',
-            position: 'relative' 
-          }}>
-            <span style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: 'white',
-              padding: '0 var(--space-3)',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--text-muted)',
-            }}>
-              Ingreso rápido (Demo)
-            </span>
-          </div>
-
-          <p style={{ 
-            fontSize: 'var(--text-xs)', 
-            color: 'var(--text-muted)', 
-            marginTop: 'var(--space-2)' 
-          }}>
-            Usuario: <strong>docente@kindihub.edu.pe</strong> / Contraseña: <strong>docente123</strong>
+            ¿Ya tienes una cuenta?{' '}
+            <Link href="/login" style={{ color: 'var(--primary-color)', fontWeight: '600', textDecoration: 'none' }}>
+              Inicia sesión aquí
+            </Link>
           </p>
         </div>
       </div>

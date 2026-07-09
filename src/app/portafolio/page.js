@@ -15,10 +15,11 @@ export default function PortafolioPage() {
   const [selectedClassroom, setSelectedClassroom] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchClassrooms();
-  }, [status]);
+  const fetchStudents = async (classroomId) => {
+    setSelectedClassroom(classroomId);
+    const res = await fetch(`/api/students?classroomId=${classroomId}`);
+    if (res.ok) setStudents(await res.json());
+  };
 
   const fetchClassrooms = async () => {
     const res = await fetch('/api/classrooms');
@@ -33,11 +34,14 @@ export default function PortafolioPage() {
     setLoading(false);
   };
 
-  const fetchStudents = async (classroomId) => {
-    setSelectedClassroom(classroomId);
-    const res = await fetch(`/api/students?classroomId=${classroomId}`);
-    if (res.ok) setStudents(await res.json());
-  };
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchClassrooms();
+      }, 0);
+    }
+  }, [status]);
 
   if (loading) {
     return <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}><div className="spinner spinner-lg"></div></div>;

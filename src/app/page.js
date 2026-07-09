@@ -13,16 +13,6 @@ export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-    if (status === 'authenticated') {
-      fetchDashboard();
-    }
-  }, [status]);
-
   const fetchDashboard = async () => {
     try {
       const res = await fetch('/api/dashboard');
@@ -35,6 +25,18 @@ export default function DashboardPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchDashboard();
+      }, 0);
+    }
+  }, [status]);
 
   if (status === 'loading' || loading) {
     return (

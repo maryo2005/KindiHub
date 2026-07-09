@@ -20,10 +20,11 @@ export default function ReportesPage() {
   const [generating, setGenerating] = useState(false);
   const [periodo, setPeriodo] = useState('Semana actual');
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchData();
-  }, [status]);
+  const fetchStudents = async (classroomId) => {
+    setSelectedClassroom(classroomId);
+    const res = await fetch(`/api/students?classroomId=${classroomId}`);
+    if (res.ok) setStudents(await res.json());
+  };
 
   const fetchData = async () => {
     const res = await fetch('/api/classrooms');
@@ -38,11 +39,14 @@ export default function ReportesPage() {
     setLoading(false);
   };
 
-  const fetchStudents = async (classroomId) => {
-    setSelectedClassroom(classroomId);
-    const res = await fetch(`/api/students?classroomId=${classroomId}`);
-    if (res.ok) setStudents(await res.json());
-  };
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+    }
+  }, [status]);
 
   const fetchStudentEvidences = async (studentId) => {
     setSelectedStudent(studentId);

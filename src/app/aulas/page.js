@@ -16,16 +16,20 @@ export default function AulasPage() {
   const [form, setForm] = useState({ name: '', section: '', age: '5 años', year: new Date().getFullYear() });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-    if (status === 'authenticated') fetchClassrooms();
-  }, [status]);
-
   const fetchClassrooms = async () => {
     const res = await fetch('/api/classrooms');
     if (res.ok) setClassrooms(await res.json());
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      setTimeout(() => {
+        fetchClassrooms();
+      }, 0);
+    }
+  }, [status]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
