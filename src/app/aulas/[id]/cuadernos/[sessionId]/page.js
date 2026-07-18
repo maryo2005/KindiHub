@@ -111,6 +111,9 @@ export default function ActiveSessionPage({ params }) {
       if (transcribeRes.ok) {
         const transcribeData = await transcribeRes.json();
         transcriptionText = transcribeData.transcription;
+      } else {
+        const errData = await transcribeRes.json().catch(() => ({}));
+        alert(`Error en Whisper: ${errData.error || transcribeRes.statusText}. Verifica que GROQ_API_KEY esté configurada en Vercel.`);
       }
 
       setTranscription(transcriptionText);
@@ -255,6 +258,8 @@ export default function ActiveSessionPage({ params }) {
         a.click();
         window.URL.revokeObjectURL(url);
         a.remove();
+        // Refrescar para obtener la ruta generada y guardada en BD
+        fetchSession();
       } else {
         const errData = await res.json();
         alert('Error al generar: ' + errData.error);
@@ -598,10 +603,9 @@ export default function ActiveSessionPage({ params }) {
                 <p className="text-muted">Sin evidencias aún. ¡Captura la primera!</p>
               </div>
             )}
-            
             {/* Botón generar DOCX */}
             {evidences.length > 0 && (
-              <div className="mt-4" style={{ padding: '0 var(--space-4) var(--space-4) var(--space-4)' }}>
+              <div className="mt-4 flex flex-col gap-2" style={{ padding: '0 var(--space-4) var(--space-4) var(--space-4)' }}>
                 <button 
                   className={`btn btn-primary btn-full btn-lg ${generatingDocx ? 'btn-loading' : ''}`}
                   onClick={generateCuadernoDocx}
@@ -610,6 +614,17 @@ export default function ActiveSessionPage({ params }) {
                 >
                   {generatingDocx ? '🤖 Generando Cuaderno con IA...' : '📄 Generar Cuaderno de Campo con IA (.docx)'}
                 </button>
+                
+                {sessionData?.generatedFile && (
+                  <a 
+                    href={sessionData.generatedFile} 
+                    download={`Cuaderno_de_Campo_${sessionData.activityTitle}.docx`}
+                    className="btn btn-outline btn-full btn-lg mt-2"
+                    style={{ borderColor: '#4c6ef5', color: '#4c6ef5' }}
+                  >
+                    📥 Descargar Cuaderno Generado Previamente
+                  </a>
+                )}
               </div>
             )}
           </div>

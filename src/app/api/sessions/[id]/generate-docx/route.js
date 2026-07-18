@@ -76,7 +76,7 @@ export async function POST(request, { params }) {
           new Paragraph({ text: "Criterios de Evaluación:", bold: true, spacing: { after: 100 } }),
           ...sessionData.criteria.map(c => new Paragraph({ text: `• ${c.description}`, spacing: { after: 100 } })),
 
-          // Evidences Table
+          // Evidencias Table
           new Paragraph({ text: "Evidencias Recolectadas", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } }),
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
@@ -84,23 +84,20 @@ export async function POST(request, { params }) {
               // Header Row
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ text: "Estudiante", bold: true })], shading: { fill: "EEEEEE" } }),
-                  new TableCell({ children: [new Paragraph({ text: "Observación / Evidencia", bold: true })], shading: { fill: "EEEEEE" } }),
-                  new TableCell({ children: [new Paragraph({ text: "Nivel", bold: true })], shading: { fill: "EEEEEE" } }),
-                  new TableCell({ children: [new Paragraph({ text: "Sugerencia de Mejora", bold: true })], shading: { fill: "EEEEEE" } }),
+                  new TableCell({ children: [new Paragraph({ text: "RELACIÓN DE NIÑOS Y NIÑAS", bold: true })], shading: { fill: "FBE5D6" } }),
+                  new TableCell({ children: [new Paragraph({ text: "DESCRIPCIÓN DE LAS EVIDENCIAS", bold: true })], shading: { fill: "FBE5D6" } }),
+                  new TableCell({ children: [new Paragraph({ text: "ASPECTOS A RETROALIMENTAR", bold: true })], shading: { fill: "FBE5D6" } }),
                 ],
               }),
               // Data Rows
-              ...sessionData.evidences.map(ev => {
+              ...sessionData.evidences.map((ev, index) => {
                 const observationText = ev.confirmedDescription || ev.aiDescription || ev.observation || 'Sin observación';
                 const feedbackText = ev.confirmedFeedback || ev.aiFeedback || '-';
-                const levelText = ev.level ? ev.level.toUpperCase() : 'NO EVALUADO';
 
                 return new TableRow({
                   children: [
-                    new TableCell({ children: [new Paragraph(ev.student?.fullName || 'Desconocido')] }),
+                    new TableCell({ children: [new Paragraph(`${index + 1}. ${ev.student?.fullName || 'Desconocido'}`)] }),
                     new TableCell({ children: [new Paragraph(observationText)] }),
-                    new TableCell({ children: [new Paragraph(levelText)] }),
                     new TableCell({ children: [new Paragraph(feedbackText)] }),
                   ],
                 });
@@ -113,6 +110,15 @@ export async function POST(request, { params }) {
 
     // Generate Buffer
     const buffer = await Packer.toBuffer(doc);
+
+    // Guardar permanentemente en la base de datos (Base64)
+    const base64Data = buffer.toString('base64');
+    const publicPath = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${base64Data}`;
+    
+    await prisma.session.update({
+      where: { id },
+      data: { generatedFile: publicPath }
+    });
 
     // Return as downloadable file
     return new NextResponse(buffer, {
