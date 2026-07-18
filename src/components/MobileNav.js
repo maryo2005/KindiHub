@@ -14,10 +14,7 @@ export default function MobileNav() {
 
   const navItems = [
     { label: 'Inicio', href: '/', icon: '🏠' },
-    { label: 'Sesión', href: '/sesion', icon: '📋' },
-    { label: 'Evidencias', href: '/revisiones', icon: '📝' },
-    { label: 'Portafolio', href: '/portafolio', icon: '📂' },
-    { label: 'Reportes', href: '/reportes', icon: '📈' },
+    { label: 'Mis Aulas', href: '/aulas', icon: '🏫' },
   ];
 
   return (

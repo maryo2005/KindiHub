@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function ActiveSessionPage({ params }) {
-  const { id } = use(params);
+  const { id, sessionId } = use(params);
   const { data: authSession, status } = useSession();
   const router = useRouter();
   const [sessionData, setSessionData] = useState(null);
@@ -24,6 +24,8 @@ export default function ActiveSessionPage({ params }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [uploadingTemplate, setUploadingTemplate] = useState(false);
+  const [extractingFields, setExtractingFields] = useState(false);
 
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -38,7 +40,7 @@ export default function ActiveSessionPage({ params }) {
   const [capturedPreview, setCapturedPreview] = useState(null);
 
   const fetchSession = async () => {
-    const res = await fetch(`/api/sessions/${id}`);
+    const res = await fetch(`/api/sessions/${sessionId}`);
     if (res.ok) {
       const data = await res.json();
       setSessionData(data);
@@ -177,7 +179,7 @@ export default function ActiveSessionPage({ params }) {
     try {
       const body = {
         studentId: selectedStudent,
-        sessionId: id,
+        sessionId,
         criteriaId: selectedCriteria || undefined,
         type: showCapture === 'audio' || showCapture === 'review' ? 'audio' : 
               showCapture === 'photo' ? 'foto' : showCapture === 'video' ? 'video' : 'texto',
@@ -232,6 +234,48 @@ export default function ActiveSessionPage({ params }) {
     setSaving(false);
   };
 
+  // ---- TEMPLATE UPLOAD & EXTRACTION ----
+  const handleTemplateUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingTemplate(true);
+    try {
+      // 1. Upload file
+      const form = new FormData();
+      form.append('file', file);
+      const uploadRes = await fetch(`/api/sessions/${sessionId}/upload-notebook`, {
+        method: 'POST',
+        body: form,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Error al subir la plantilla');
+      }
+
+      // 2. Extract fields with AI
+      setUploadingTemplate(false);
+      setExtractingFields(true);
+
+      const extractRes = await fetch('/api/ai/extract-fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      if (extractRes.ok) {
+        await fetchSession(); // Recargar los datos con la competencia y criterios extraídos
+      } else {
+        alert('Error al extraer campos con IA. Puedes configurar manualmente más tarde.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+    setUploadingTemplate(false);
+    setExtractingFields(false);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}><div className="spinner spinner-lg"></div></div>;
   }
@@ -254,9 +298,13 @@ export default function ActiveSessionPage({ params }) {
       {/* Header */}
       <div className="page-header">
         <div className="page-breadcrumb">
-          <Link href="/sesion">Sesiones</Link>
+          <Link href="/aulas">Aulas</Link>
           <span className="page-breadcrumb-separator">›</span>
-          <span>{sessionData.activityTitle}</span>
+          <Link href={`/aulas/${id}`}>{sessionData?.notebook?.classroom?.name || 'Aula'}</Link>
+          <span className="page-breadcrumb-separator">›</span>
+          <Link href={`/aulas/${id}/cuadernos`}>Cuadernos de Campo</Link>
+          <span className="page-breadcrumb-separator">›</span>
+          <span>{sessionData?.activityTitle || 'Sesión'}</span>
         </div>
         <div className="page-header-top">
           <div>
@@ -273,18 +321,44 @@ export default function ActiveSessionPage({ params }) {
         </div>
       </div>
 
-      {/* Info de sesión */}
-      <div className="card mb-6" style={{ background: 'linear-gradient(135deg, var(--primary-50), var(--accent-50))' }}>
-        <div className="flex flex-col gap-2">
-          <div className="text-sm"><strong>Competencia:</strong> {sessionData.competency}</div>
-          {sessionData.standard && <div className="text-xs text-muted"><strong>Estándar:</strong> {sessionData.standard}</div>}
-          {sessionData.criteria?.length > 0 && (
-            <div className="text-xs text-muted">
-              <strong>Criterios:</strong> {sessionData.criteria.map(c => c.description).join(' | ')}
+      {!sessionData.competency || sessionData.competency.trim() === '' ? (
+        <div className="empty-state">
+          <div className="empty-state-icon" style={{ fontSize: '3rem', marginBottom: '1rem' }}>📄</div>
+          <h2 className="empty-state-title">Sube tu formato de Cuaderno de Campo</h2>
+          <p className="empty-state-description" style={{ maxWidth: '500px', margin: '0 auto 1.5rem auto' }}>
+            Para iniciar, sube la plantilla en formato Word (.docx). La Inteligencia Artificial leerá el documento para extraer automáticamente la <strong>Competencia, Estándar, Capacidades y Criterios de Evaluación</strong> que vas a calificar hoy.
+          </p>
+          
+          {uploadingTemplate || extractingFields ? (
+            <div className="flex flex-col items-center gap-3">
+              <div className="spinner spinner-lg"></div>
+              <p className="text-primary font-semibold">
+                {uploadingTemplate ? 'Subiendo documento...' : '🤖 IA leyendo y extrayendo campos pedagógicos...'}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <input type="file" id="template-upload" accept=".doc,.docx" style={{ display: 'none' }} onChange={handleTemplateUpload} />
+              <label htmlFor="template-upload" className="btn btn-primary" style={{ cursor: 'pointer' }}>
+                📁 Subir Plantilla y Extraer con IA
+              </label>
             </div>
           )}
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Info de sesión extraída */}
+          <div className="card mb-6" style={{ background: 'linear-gradient(135deg, var(--primary-50), var(--accent-50))' }}>
+            <div className="flex flex-col gap-2">
+              <div className="text-sm"><strong>Competencia:</strong> {sessionData.competency}</div>
+              {sessionData.standard && <div className="text-xs text-muted"><strong>Estándar:</strong> {sessionData.standard}</div>}
+              {sessionData.criteria?.length > 0 && (
+                <div className="text-xs text-muted">
+                  <strong>Criterios Extraídos:</strong> {sessionData.criteria.map(c => c.description).join(' | ')}
+                </div>
+              )}
+            </div>
+          </div>
 
       <div className="grid-2">
         {/* Columna izquierda: Selección + Captura */}
@@ -360,18 +434,6 @@ export default function ActiveSessionPage({ params }) {
                 ) : (
                   <span className="capture-btn-label">Grabar Audio</span>
                 )}
-              </div>
-
-              <div className="capture-btn capture-btn-photo"
-                onClick={() => { fileInputRef.current.accept = 'image/*'; fileInputRef.current.capture = 'environment'; fileInputRef.current.click(); }}>
-                <div className="capture-btn-icon">📷</div>
-                <span className="capture-btn-label">Tomar Foto</span>
-              </div>
-
-              <div className="capture-btn capture-btn-video"
-                onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current.capture = 'environment'; fileInputRef.current.click(); }}>
-                <div className="capture-btn-icon">🎥</div>
-                <span className="capture-btn-label">Grabar Video</span>
               </div>
 
               <div className="capture-btn capture-btn-text"
@@ -562,6 +624,8 @@ export default function ActiveSessionPage({ params }) {
             <p className="text-sm text-muted mt-2">Generando descripción y retroalimentación</p>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

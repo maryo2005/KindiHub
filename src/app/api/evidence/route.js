@@ -1,7 +1,8 @@
 // ============================================
-// API: Gestión de Evidencias
+// API: Gestión de Evidencias (simplificado)
 // GET /api/evidence - Listar con filtros
 // POST /api/evidence - Crear evidencia
+// PUT /api/evidence - Actualizar evidencia
 // ============================================
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -17,21 +18,15 @@ export async function GET(request) {
     const sessionId = searchParams.get('sessionId');
     const studentId = searchParams.get('studentId');
     const status = searchParams.get('status');
-    const type = searchParams.get('type');
-    const level = searchParams.get('level');
+    const classroomId = searchParams.get('classroomId');
 
     const where = {};
     if (sessionId) where.sessionId = sessionId;
     if (studentId) where.studentId = studentId;
-    if (status) {
-      if (status === 'confirmada') {
-        where.status = { in: ['confirmada', 'corregida'] };
-      } else {
-        where.status = status;
-      }
+    if (status) where.status = status;
+    if (classroomId) {
+      where.session = { notebook: { classroomId } };
     }
-    if (type) where.type = type;
-    if (level) where.level = level;
 
     const evidences = await prisma.evidence.findMany({
       where,
@@ -56,14 +51,12 @@ export async function POST(request) {
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     const body = await request.json();
-    const { studentId, sessionId, criteriaId, type, level, observation, transcription,
-            aiDescription, aiFeedback, confirmedDescription, confirmedFeedback, status: evidenceStatus } = body;
+    const { studentId, sessionId, criteriaId, type, level, competency,
+            observation, transcription, status: evidenceStatus } = body;
 
     if (!studentId || !sessionId) {
       return NextResponse.json({ error: 'Estudiante y sesión son requeridos' }, { status: 400 });
     }
-
-    const finalStatus = evidenceStatus || 'pendiente';
 
     const evidence = await prisma.evidence.create({
       data: {
@@ -72,14 +65,11 @@ export async function POST(request) {
         criteriaId,
         type: type || 'texto',
         level,
+        competency,
         observation,
         transcription,
-        aiDescription,
-        aiFeedback,
-        confirmedDescription,
-        confirmedFeedback,
-        status: finalStatus,
-        confirmedAt: finalStatus === 'confirmada' ? new Date() : undefined,
+        status: evidenceStatus || 'pendiente',
+        confirmedAt: evidenceStatus === 'confirmada' ? new Date() : undefined,
         createdBy: session.user.id,
       },
       include: {
@@ -90,6 +80,39 @@ export async function POST(request) {
     });
 
     return NextResponse.json(evidence, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const body = await request.json();
+    const { id, ...updateData } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID de evidencia es requerido' }, { status: 400 });
+    }
+
+    // Si se confirma, agregar fecha
+    if (updateData.status === 'confirmada') {
+      updateData.confirmedAt = new Date();
+    }
+
+    const evidence = await prisma.evidence.update({
+      where: { id },
+      data: updateData,
+      include: {
+        student: { select: { fullName: true } },
+        criteria: { select: { description: true } },
+        files: true,
+      },
+    });
+
+    return NextResponse.json(evidence);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

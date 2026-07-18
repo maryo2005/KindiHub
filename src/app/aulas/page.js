@@ -15,10 +15,15 @@ export default function AulasPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', section: '', age: '5 años', year: new Date().getFullYear() });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchClassrooms = async () => {
-    const res = await fetch('/api/classrooms');
-    if (res.ok) setClassrooms(await res.json());
+    try {
+      const res = await fetch('/api/classrooms');
+      if (res.ok) setClassrooms(await res.json());
+    } catch (err) {
+      console.error('Error al cargar aulas:', err);
+    }
     setLoading(false);
   };
 
@@ -34,15 +39,23 @@ export default function AulasPage() {
   const handleCreate = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch('/api/classrooms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setShowModal(false);
-      setForm({ name: '', section: '', age: '5 años', year: new Date().getFullYear() });
-      fetchClassrooms();
+    setError('');
+    try {
+      const res = await fetch('/api/classrooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setShowModal(false);
+        setForm({ name: '', section: '', age: '5 años', year: new Date().getFullYear() });
+        fetchClassrooms();
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Error al crear el aula. Intenta de nuevo.');
+      }
+    } catch (err) {
+      setError('Error de conexión. Verifica que el servidor esté funcionando.');
     }
     setSaving(false);
   };
@@ -138,6 +151,11 @@ export default function AulasPage() {
                   <input type="number" className="form-input" value={form.year}
                     onChange={e => setForm({...form, year: parseInt(e.target.value)})} />
                 </div>
+                {error && (
+                  <div style={{ color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 14px', marginTop: '8px', fontSize: '0.9rem' }}>
+                    ⚠️ {error}
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancelar</button>

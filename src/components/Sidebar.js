@@ -15,15 +15,7 @@ export default function Sidebar() {
   const navItems = [
     { label: 'Inicio', href: '/', icon: '🏠' },
     { section: 'GESTIÓN' },
-    { label: 'Aulas', href: '/aulas', icon: '🏫' },
-    { label: 'Cuadernos de Campo', href: '/cuaderno', icon: '📓' },
-    { label: 'Sesiones', href: '/sesion', icon: '📋' },
-    { section: 'EVALUACIÓN' },
-    { label: 'Evidencias', href: '/revisiones', icon: '📝' },
-    { label: 'Portafolios', href: '/portafolio', icon: '📂' },
-    { section: 'ANÁLISIS' },
-    { label: 'Seguimiento', href: '/seguimiento', icon: '📊' },
-    { label: 'Reportes', href: '/reportes', icon: '📈' },
+    { label: 'Mis Aulas', href: '/aulas', icon: '🏫' },
   ];
 
   const initials = session.user?.name

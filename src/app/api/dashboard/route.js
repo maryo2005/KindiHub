@@ -24,17 +24,6 @@ export async function GET() {
       prisma.session.count({ where: { status: 'activa', notebook: { classroom: { userId } } } }),
     ]);
 
-    // Evidencias recientes
-    const recentEvidences = await prisma.evidence.findMany({
-      where: { session: { notebook: { classroom: { userId } } } },
-      include: {
-        student: { select: { fullName: true } },
-        session: { select: { activityTitle: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    });
-
     // Estudiantes sin evidencia reciente (últimos 7 días)
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -78,7 +67,6 @@ export async function GET() {
         confirmedEvidences,
         activeSessions,
       },
-      recentEvidences,
       studentsWithoutRecent,
       todaySessions,
     });

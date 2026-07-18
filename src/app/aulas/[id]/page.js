@@ -1,74 +1,30 @@
 'use client';
 // ============================================
-// Detalle de Aula - Gestión de Estudiantes
+// Vista de Aula - Carpetas Anidadas
 // ============================================
 import { useState, useEffect, use } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function AulaDetailPage({ params }) {
+export default function AulaFolderPage({ params }) {
   const { id } = use(params);
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [students, setStudents] = useState([]);
   const [classroom, setClassroom] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [bulkMode, setBulkMode] = useState(false);
-  const [bulkNames, setBulkNames] = useState('');
-
-  const fetchData = async () => {
-    const [studentsRes, classroomsRes] = await Promise.all([
-      fetch(`/api/students?classroomId=${id}`),
-      fetch('/api/classrooms'),
-    ]);
-    if (studentsRes.ok) setStudents(await studentsRes.json());
-    if (classroomsRes.ok) {
-      const classrooms = await classroomsRes.json();
-      setClassroom(classrooms.find(c => c.id === id));
-    }
-    setLoading(false);
-  };
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
     if (status === 'authenticated') {
-      setTimeout(() => {
-        fetchData();
-      }, 0);
-    }
-  }, [status]);
-
-  const handleAddStudent = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    
-    if (bulkMode) {
-      const names = bulkNames.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-      for (const name of names) {
-        await fetch('/api/students', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fullName: name, classroomId: id }),
+      fetch('/api/classrooms')
+        .then(res => res.json())
+        .then(data => {
+          setClassroom(data.find(c => c.id === id));
+          setLoading(false);
         });
-      }
-    } else {
-      await fetch('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: newName, classroomId: id }),
-      });
     }
-    
-    setNewName('');
-    setBulkNames('');
-    setShowModal(false);
-    fetchData();
-    setSaving(false);
-  };
+  }, [status, id, router]);
 
   if (loading) {
     return (
@@ -88,82 +44,27 @@ export default function AulaDetailPage({ params }) {
         </div>
         <div className="page-header-top">
           <div>
-            <h1 className="page-title">👧 Estudiantes — {classroom?.name}</h1>
-            <p className="page-subtitle">{classroom?.age} · Sección {classroom?.section} · {students.length} estudiantes</p>
+            <h1 className="page-title">📁 {classroom?.name}</h1>
+            <p className="page-subtitle">Selecciona una carpeta para continuar</p>
           </div>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary" id="btn-add-student">
-            + Agregar Estudiante
-          </button>
         </div>
       </div>
 
-      {students.length > 0 ? (
-        <div className="grid-3">
-          {students.map(s => (
-            <Link key={s.id} href={`/portafolio/${s.id}`} className="card card-clickable">
-              <div className="flex items-center gap-3">
-                <div className="student-chip-avatar" style={{ width: 44, height: 44 }}>
-                  {s.fullName.split(' ').map(w => w[0]).join('').slice(0, 2)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="font-semibold">{s.fullName}</div>
-                  <div className="text-xs text-muted">{s._count?.evidences || 0} evidencias</div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="empty-state">
-          <div className="empty-state-icon">👧</div>
-          <h2 className="empty-state-title">Sin estudiantes</h2>
-          <p className="empty-state-description">Agrega estudiantes a esta aula para poder registrar evidencias</p>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">+ Agregar Estudiantes</button>
-        </div>
-      )}
+      <div className="grid-2 mt-4">
+        {/* Carpeta Cuadernos de Campo (Directo a Sesiones) */}
+        <Link href={`/aulas/${id}/cuadernos`} className="card card-clickable text-center" style={{ padding: 'var(--space-8) var(--space-4)' }}>
+          <div style={{ fontSize: '4rem', marginBottom: 'var(--space-4)' }}>📓</div>
+          <h2 className="card-title text-xl">Cuadernos de Campo</h2>
+          <p className="card-subtitle mt-2">Gestionar sesiones y archivos Word</p>
+        </Link>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">Agregar Estudiante(s)</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleAddStudent}>
-              <div className="modal-body">
-                <div className="flex gap-2 mb-4">
-                  <button type="button" className={`btn btn-sm ${!bulkMode ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => setBulkMode(false)}>Individual</button>
-                  <button type="button" className={`btn btn-sm ${bulkMode ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => setBulkMode(true)}>Masivo</button>
-                </div>
-                {bulkMode ? (
-                  <div className="form-group">
-                    <label className="form-label">Nombres (uno por línea)</label>
-                    <textarea className="form-textarea" rows={8}
-                      placeholder="Gabriel Mendoza&#10;María Fernanda López&#10;Jesús Alejandro Torres"
-                      value={bulkNames} onChange={e => setBulkNames(e.target.value)} required />
-                    <span className="form-hint">{bulkNames.split('\n').filter(n => n.trim()).length} estudiantes</span>
-                  </div>
-                ) : (
-                  <div className="form-group">
-                    <label className="form-label form-label-required">Nombre completo</label>
-                    <input className="form-input" placeholder="Nombre del estudiante"
-                      value={newName} onChange={e => setNewName(e.target.value)} required id="input-student-name" />
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className={`btn btn-primary ${saving ? 'btn-loading' : ''}`} disabled={saving}>
-                  {saving ? 'Guardando...' : 'Agregar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        {/* Carpeta Evidencias */}
+        <Link href={`/aulas/${id}/evidencias`} className="card card-clickable text-center" style={{ padding: 'var(--space-8) var(--space-4)' }}>
+          <div style={{ fontSize: '4rem', marginBottom: 'var(--space-4)' }}>📂</div>
+          <h2 className="card-title text-xl">Evidencias</h2>
+          <p className="card-subtitle mt-2">Portafolios de estudiantes</p>
+        </Link>
+      </div>
     </div>
   );
 }

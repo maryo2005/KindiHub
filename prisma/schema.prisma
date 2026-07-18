@@ -69,17 +69,20 @@ model FieldNotebook {
 
 // ---- SESIÓN DE APRENDIZAJE ----
 model Session {
-  id            String   @id @default(cuid())
-  activityTitle String   // Título de la actividad
-  sessionDate   DateTime // Fecha de la sesión
-  area          String   // Área curricular
-  competency    String   // Competencia
-  standard      String?  // Estándar de aprendizaje
-  capacities    String?  // Capacidades (separadas por |)
+  id            String    @id @default(cuid())
+  activityTitle String    // Título de la actividad
+  sessionDate   DateTime  // Fecha de la sesión
+  area          String    // Área curricular
+  competency    String    // Competencia
+  standard      String?   // Estándar de aprendizaje
+  capacities    String?   // Capacidades (separadas por |)
   notebookId    String
-  status        String   @default("preparada") // preparada, activa, cerrada
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status        String    @default("preparada") // preparada, activa, cerrada
+  notebookFile  String?   // Archivo Word subido para esta sesión
+  generatedFile String?   // Archivo generado por IA
+  aiProcessedAt DateTime? // Fecha de procesamiento con IA
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   notebook  FieldNotebook     @relation(fields: [notebookId], references: [id], onDelete: Cascade)
   criteria  SessionCriteria[]
@@ -98,23 +101,20 @@ model SessionCriteria {
 
 // ---- EVIDENCIA ----
 model Evidence {
-  id                   String   @id @default(cuid())
-  studentId            String
-  sessionId            String
-  criteriaId           String?
-  type                 String   // texto, audio, foto, video, marcacion
-  level                String?  // inicio, proceso, logrado, requiere_apoyo
-  observation          String?  // Observación original de la docente
-  transcription        String?  // Transcripción del audio (Whisper)
-  aiDescription        String?  // Descripción generada por IA
-  aiFeedback           String?  // Retroalimentación sugerida por IA
-  confirmedDescription String?  // Descripción confirmada por docente
-  confirmedFeedback    String?  // Retroalimentación confirmada por docente
-  status               String   @default("pendiente") // pendiente, revisada, confirmada, corregida
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  confirmedAt          DateTime?
-  createdBy            String?  // Trazabilidad: quién creó
+  id            String    @id @default(cuid())
+  studentId     String
+  sessionId     String
+  criteriaId    String?
+  type          String    // texto, audio, foto, video, marcacion
+  level         String?   // inicio, proceso, logrado, requiere_apoyo
+  competency    String?   // Competencia (para botones rápidos)
+  observation   String?   // Observación original de la docente
+  transcription String?   // Transcripción del audio (Whisper)
+  status        String    @default("pendiente") // pendiente, confirmada
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  confirmedAt   DateTime?
+  createdBy     String?   // Trazabilidad: quién creó
 
   student  Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   session  Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)

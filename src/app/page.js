@@ -66,8 +66,8 @@ export default function DashboardPage() {
               Resumen de tu actividad pedagógica
             </p>
           </div>
-          <Link href="/sesion" className="btn btn-primary" id="btn-new-session">
-            📋 Ir a Sesión Activa
+          <Link href="/aulas" className="btn btn-primary" id="btn-new-session">
+            📋 Ir a Mis Aulas
           </Link>
         </div>
       </div>
@@ -112,14 +112,14 @@ export default function DashboardPage() {
               <h2 className="card-title">📋 Sesiones Activas</h2>
               <p className="card-subtitle">Sesiones del día en curso</p>
             </div>
-            <Link href="/sesion" className="btn btn-outline btn-sm">Ver todas</Link>
+            <Link href="/aulas" className="btn btn-outline btn-sm">Ver aulas</Link>
           </div>
           {data?.todaySessions?.length > 0 ? (
             <div className="flex flex-col gap-3">
               {data.todaySessions.map(s => (
                 <Link
                   key={s.id}
-                  href={`/sesion/${s.id}`}
+                  href={`/aulas/${s.notebook?.classroomId}/cuadernos/${s.id}`}
                   className="card card-clickable"
                   style={{ padding: 'var(--space-4)' }}
                 >
@@ -140,7 +140,7 @@ export default function DashboardPage() {
               <div className="empty-state-icon">📋</div>
               <p className="empty-state-title">No hay sesiones activas</p>
               <p className="empty-state-description">Crea una nueva sesión para empezar a registrar evidencias</p>
-              <Link href="/sesion" className="btn btn-primary btn-sm">Crear sesión</Link>
+              <Link href="/aulas" className="btn btn-primary btn-sm">Ir a Aulas</Link>
             </div>
           )}
         </div>
@@ -188,89 +188,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Evidencias recientes */}
-      <div className="card mt-8">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title">🕐 Evidencias Recientes</h2>
-            <p className="card-subtitle">Últimas capturas registradas</p>
-          </div>
-          <Link href="/revisiones" className="btn btn-outline btn-sm">Ver todas</Link>
-        </div>
-        {data?.recentEvidences?.length > 0 ? (
-          <div className="table-container" style={{ border: 'none' }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Estudiante</th>
-                  <th className="hide-mobile">Sesión</th>
-                  <th>Tipo</th>
-                  <th>Nivel</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recentEvidences.map(ev => (
-                  <tr key={ev.id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div className="student-chip-avatar" style={{ width: 28, height: 28, fontSize: '0.65rem' }}>
-                          {ev.student?.fullName?.split(' ').map(w => w[0]).join('').slice(0, 2)}
-                        </div>
-                        <span className="font-semibold text-sm">{ev.student?.fullName}</span>
-                      </div>
-                    </td>
-                    <td className="hide-mobile text-sm text-muted">{ev.session?.activityTitle}</td>
-                    <td>
-                      <span className="text-sm">
-                        {ev.type === 'audio' ? '🎙️' : ev.type === 'foto' ? '📷' : ev.type === 'video' ? '🎥' : '✏️'}
-                      </span>
-                    </td>
-                    <td>
-                      {ev.level && (
-                        <span className={`badge badge-${ev.level === 'logrado' ? 'success' : ev.level === 'proceso' ? 'warning' : ev.level === 'inicio' ? 'error' : 'purple'}`}>
-                          {ev.level === 'inicio' ? 'Inicio' : ev.level === 'proceso' ? 'Proceso' : ev.level === 'logrado' ? 'Logrado' : 'Req. apoyo'}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge badge-status-${ev.status}`}>
-                        {ev.status === 'pendiente' ? 'Pendiente' : ev.status === 'confirmada' ? 'Confirmada' : ev.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="empty-state" style={{ padding: 'var(--space-8) var(--space-4)' }}>
-            <div className="empty-state-icon">📝</div>
-            <p className="empty-state-title">Sin evidencias aún</p>
-            <p className="empty-state-description">Inicia una sesión y captura la primera evidencia del día</p>
-          </div>
-        )}
-      </div>
 
       {/* Quick actions para mobile */}
       <div className="show-mobile mt-6">
         <h3 className="card-title mb-4">⚡ Acciones Rápidas</h3>
         <div className="grid-2">
-          <Link href="/sesion" className="card card-clickable text-center" style={{ padding: 'var(--space-4)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>📋</div>
-            <div className="font-semibold text-sm">Sesión Activa</div>
-          </Link>
           <Link href="/aulas" className="card card-clickable text-center" style={{ padding: 'var(--space-4)' }}>
             <div style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>🏫</div>
-            <div className="font-semibold text-sm">Mis Aulas</div>
-          </Link>
-          <Link href="/portafolio" className="card card-clickable text-center" style={{ padding: 'var(--space-4)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>📂</div>
-            <div className="font-semibold text-sm">Portafolios</div>
-          </Link>
-          <Link href="/reportes" className="card card-clickable text-center" style={{ padding: 'var(--space-4)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>📈</div>
-            <div className="font-semibold text-sm">Reportes</div>
+            <div className="font-semibold text-sm">Entrar a mis Aulas</div>
+            <div className="text-xs text-muted mt-1">Sesiones y Cuadernos</div>
           </Link>
         </div>
       </div>

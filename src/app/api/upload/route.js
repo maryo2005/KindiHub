@@ -1,6 +1,7 @@
 // ============================================
-// API: Subida de archivos
+// API: Subida de archivos (reorganizada por carpetas)
 // POST /api/upload
+// Estructura: /uploads/aulas/{classroomId}/evidencias/{studentId}/
 // ============================================
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
@@ -17,14 +18,28 @@ export async function POST(request) {
     const formData = await request.formData();
     const file = formData.get('file');
     const evidenceId = formData.get('evidenceId');
+    const studentId = formData.get('studentId');
+    const classroomId = formData.get('classroomId');
     const type = formData.get('type') || 'general'; // audio, foto, video, documento
 
     if (!file) {
       return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 });
     }
 
-    // Crear directorio de uploads si no existe
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', type);
+    // Determinar directorio de destino
+    let uploadDir;
+    let publicPathPrefix;
+
+    if (studentId && classroomId) {
+      // Evidencias organizadas por aula → estudiante
+      uploadDir = path.join(process.cwd(), 'public', 'uploads', 'aulas', classroomId, 'evidencias', studentId);
+      publicPathPrefix = `/uploads/aulas/${classroomId}/evidencias/${studentId}`;
+    } else {
+      // Fallback: estructura genérica
+      uploadDir = path.join(process.cwd(), 'public', 'uploads', type);
+      publicPathPrefix = `/uploads/${type}`;
+    }
+
     await mkdir(uploadDir, { recursive: true });
 
     // Generar nombre único
@@ -37,7 +52,7 @@ export async function POST(request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
-    const publicPath = `/uploads/${type}/${filename}`;
+    const publicPath = `${publicPathPrefix}/${filename}`;
 
     // Si hay evidenceId, crear registro en BD
     if (evidenceId) {
