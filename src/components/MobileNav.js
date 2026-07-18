@@ -13,7 +13,7 @@ export default function MobileNav() {
   if (!session) return null;
 
   const navItems = [
-    { label: 'Inicio', href: '/', icon: '🏠' },
+    { label: 'Inicio', href: '/dashboard', icon: '🏠' },
     { label: 'Mis Aulas', href: '/aulas', icon: '🏫' },
   ];
 
