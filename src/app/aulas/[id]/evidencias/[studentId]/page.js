@@ -137,14 +137,15 @@ export default function StudentPortfolioPage({ params }) {
         uploadForm.append('type', detectType);
         
         const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-        
         if (uploadRes.ok) {
           fetchData(); // Refresh the list
         } else {
-          alert('Error al subir el archivo multimedia.');
+          const errData = await uploadRes.json().catch(() => ({}));
+          alert(`Error al subir: ${errData.error || uploadRes.statusText}`);
         }
       } else {
-        alert('Error al crear la evidencia.');
+        const errData = await res.json().catch(() => ({}));
+        alert(`Error al crear la evidencia: ${errData.error || res.statusText}`);
       }
     } catch (err) {
       console.error('Error in direct upload:', err);
@@ -536,21 +537,25 @@ export default function StudentPortfolioPage({ params }) {
 
                   {/* Media attachments */}
                   {ev.files?.length > 0 && (
-                    <div className="mt-3 flex flex-col gap-2">
+                    <div className="mt-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
                       {ev.files.map(file => (
-                        <div key={file.id} className="media-preview" style={{ maxWidth: '400px' }}>
+                        <div key={file.id} className="media-preview" style={{ width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                           {file.fileType.startsWith('image/') && (
-                            <img src={file.filePath} alt="Adjunto" style={{ borderRadius: 'var(--border-radius-md)', width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
-                          )}
-                          {file.fileType.startsWith('audio/') && (
-                            <audio controls src={file.filePath} style={{ width: '100%' }} />
+                            <a href={file.filePath} target="_blank" rel="noreferrer">
+                              <img src={file.filePath} alt="Adjunto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </a>
                           )}
                           {file.fileType.startsWith('video/') && (
-                            <video controls src={file.filePath} style={{ width: '100%', maxHeight: '200px' }} />
+                            <a href={file.filePath} target="_blank" rel="noreferrer" style={{ position: 'relative', display: 'block', width: '100%', height: '100%' }}>
+                              <video src={file.filePath} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
+                                <span style={{ color: 'white', fontSize: '20px' }}>▶️</span>
+                              </div>
+                            </a>
                           )}
                           {!file.fileType.startsWith('image/') && !file.fileType.startsWith('audio/') && !file.fileType.startsWith('video/') && (
-                            <a href={file.filePath} download className="btn btn-outline btn-sm flex items-center justify-center gap-2">
-                              📄 Descargar archivo
+                            <a href={file.filePath} download className="btn btn-outline btn-sm flex items-center justify-center h-full text-xs text-center">
+                              📄 Doc
                             </a>
                           )}
                         </div>
