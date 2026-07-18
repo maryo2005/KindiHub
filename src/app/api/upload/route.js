@@ -26,33 +26,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 });
     }
 
-    // Determinar directorio de destino
-    let uploadDir;
-    let publicPathPrefix;
-
-    if (studentId && classroomId) {
-      // Evidencias organizadas por aula → estudiante
-      uploadDir = path.join(process.cwd(), 'public', 'uploads', 'aulas', classroomId, 'evidencias', studentId);
-      publicPathPrefix = `/uploads/aulas/${classroomId}/evidencias/${studentId}`;
-    } else {
-      // Fallback: estructura genérica
-      uploadDir = path.join(process.cwd(), 'public', 'uploads', type);
-      publicPathPrefix = `/uploads/${type}`;
-    }
-
-    await mkdir(uploadDir, { recursive: true });
-
-    // Generar nombre único
-    const timestamp = Date.now();
-    const ext = file.name.split('.').pop();
-    const filename = `${type}_${timestamp}.${ext}`;
-    const filePath = path.join(uploadDir, filename);
-
-    // Guardar archivo
+    // Convertir a Base64 para almacenar directamente en la base de datos
+    // Esto soluciona el error ENOENT de Vercel (sistema de archivos de solo lectura)
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
-
-    const publicPath = `${publicPathPrefix}/${filename}`;
+    const base64Data = buffer.toString('base64');
+    const publicPath = `data:${file.type};base64,${base64Data}`;
+    const filename = file.name || 'archivo_multimedia';
 
     // Si hay evidenceId, crear registro en BD
     if (evidenceId) {

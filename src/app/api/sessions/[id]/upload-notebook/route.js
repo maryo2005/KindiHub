@@ -37,22 +37,10 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 });
     }
 
-    // Estructura: /uploads/aulas/{classroomId}/cuaderno-de-campo/{sessionId}/
-    const classroomId = sessionData.notebook.classroom.id;
-    const uploadDir = path.join(
-      process.cwd(), 'public', 'uploads', 'aulas',
-      classroomId, 'cuaderno-de-campo', id
-    );
-    await mkdir(uploadDir, { recursive: true });
-
-    // Guardar archivo
-    const ext = file.name.split('.').pop();
-    const filename = `cuaderno_original_${Date.now()}.${ext}`;
-    const filePath = path.join(uploadDir, filename);
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
-
-    const publicPath = `/uploads/aulas/${classroomId}/cuaderno-de-campo/${id}/${filename}`;
+    const base64Data = buffer.toString('base64');
+    const publicPath = `data:${file.type};base64,${base64Data}`;
+    const filename = file.name || `cuaderno_${Date.now()}.docx`;
 
     // Actualizar sesión con la ruta del archivo
     await prisma.session.update({
