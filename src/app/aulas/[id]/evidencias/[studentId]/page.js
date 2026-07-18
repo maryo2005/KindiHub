@@ -482,7 +482,7 @@ export default function StudentPortfolioPage({ params }) {
             <div className="flex gap-2">
               <input ref={fileInputRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleDirectUpload} />
               <button className={`btn btn-primary ${saving ? 'btn-loading' : ''}`} onClick={() => fileInputRef.current.click()} disabled={saving}>
-                {saving ? 'Subiendo...' : '📸 + Subir Foto / Video'}
+                {saving ? 'Subiendo...' : '📸 Tomar foto o grabar video'}
               </button>
             </div>
           </div>

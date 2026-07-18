@@ -26,6 +26,7 @@ export default function ActiveSessionPage({ params }) {
   const [showAiModal, setShowAiModal] = useState(false);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [extractingFields, setExtractingFields] = useState(false);
+  const [generatingDocx, setGeneratingDocx] = useState(false);
 
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -226,15 +227,46 @@ export default function ActiveSessionPage({ params }) {
         setAiResult(null);
         setShowAiModal(false);
         fetchSession();
+      } else {
+        alert('Error al guardar evidencia');
       }
     } catch (err) {
       console.error('Error guardando evidencia:', err);
-      alert('Error al guardar evidencia');
+      alert('Ocurrió un error al guardar');
     }
     setSaving(false);
   };
 
-  // ---- TEMPLATE UPLOAD & EXTRACTION ----
+  const generateCuadernoDocx = async () => {
+    if (!evidences || evidences.length === 0) {
+      alert('Debes tener al menos una evidencia para generar el Cuaderno de Campo.');
+      return;
+    }
+    setGeneratingDocx(true);
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/generate-docx`, { method: 'POST' });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Cuaderno_de_Campo_${sessionData?.activityTitle || 'Sesion'}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } else {
+        const errData = await res.json();
+        alert('Error al generar: ' + errData.error);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Error en la comunicación con el servidor.');
+    }
+    setGeneratingDocx(false);
+  };
+
+  // ---- RENDER ----MPLATE UPLOAD & EXTRACTION ----
   const handleTemplateUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -472,12 +504,6 @@ export default function ActiveSessionPage({ params }) {
                   onClick={() => saveEvidence(false)} disabled={saving || !selectedStudent}>
                   {saving ? 'Guardando...' : '💾 Guardar'}
                 </button>
-                {observation && (
-                  <button className={`btn btn-accent ${aiLoading ? 'btn-loading' : ''}`}
-                    onClick={() => generateAIEvidence(observation)} disabled={aiLoading}>
-                    {aiLoading ? '🤖 Procesando...' : '🤖 Generar con IA'}
-                  </button>
-                )}
                 <button className="btn btn-ghost"
                   onClick={() => { setShowCapture(null); setObservation(''); setTranscription(''); setCapturedFile(null); setCapturedPreview(null); }}>
                   Cancelar
@@ -570,6 +596,20 @@ export default function ActiveSessionPage({ params }) {
             ) : (
               <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
                 <p className="text-muted">Sin evidencias aún. ¡Captura la primera!</p>
+              </div>
+            )}
+            
+            {/* Botón generar DOCX */}
+            {evidences.length > 0 && (
+              <div className="mt-4" style={{ padding: '0 var(--space-4) var(--space-4) var(--space-4)' }}>
+                <button 
+                  className={`btn btn-primary btn-full btn-lg ${generatingDocx ? 'btn-loading' : ''}`}
+                  onClick={generateCuadernoDocx}
+                  disabled={generatingDocx}
+                  style={{ background: 'linear-gradient(135deg, #4c6ef5, #5c7cfa)', color: 'white', border: 'none' }}
+                >
+                  {generatingDocx ? '🤖 Generando Cuaderno con IA...' : '📄 Generar Cuaderno de Campo con IA (.docx)'}
+                </button>
               </div>
             )}
           </div>
