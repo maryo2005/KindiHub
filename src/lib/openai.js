@@ -140,11 +140,13 @@ Observación: ${observacion}`;
   };
 }
 
+import { toFile } from 'openai';
+
 /**
  * Transcribe audio usando Whisper
  */
 export async function transcribeAudio(audioBuffer, filename = 'audio.webm') {
-  const file = new File([audioBuffer], filename, { type: 'audio/webm' });
+  const file = await toFile(audioBuffer, filename, { type: 'audio/webm' });
 
   const transcription = await openai.audio.transcriptions.create({
     file: file,

@@ -51,6 +51,7 @@ export default function StudentPortfolioPage({ params }) {
 
   // File Upload State
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
 
@@ -480,9 +481,13 @@ export default function StudentPortfolioPage({ params }) {
               ← Volver a Sesiones
             </button>
             <div className="flex gap-2">
-              <input ref={fileInputRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleDirectUpload} />
+              <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleDirectUpload} />
+              <input ref={videoInputRef} type="file" accept="video/*" capture="environment" style={{ display: 'none' }} onChange={handleDirectUpload} />
               <button className={`btn btn-primary ${saving ? 'btn-loading' : ''}`} onClick={() => fileInputRef.current.click()} disabled={saving}>
-                {saving ? 'Subiendo...' : '📸 Tomar foto o grabar video'}
+                {saving ? 'Subiendo...' : '📸 Tomar Foto'}
+              </button>
+              <button className={`btn btn-outline ${saving ? 'btn-loading' : ''}`} onClick={() => videoInputRef.current.click()} disabled={saving}>
+                {saving ? 'Subiendo...' : '🎥 Grabar Video'}
               </button>
             </div>
           </div>
