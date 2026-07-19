@@ -287,7 +287,8 @@ export default function ActiveSessionPage({ params }) {
       });
 
       if (!uploadRes.ok) {
-        throw new Error('Error al subir la plantilla');
+        const errData = await uploadRes.json().catch(() => ({}));
+        throw new Error(`Error al subir la plantilla: ${errData.error || uploadRes.statusText}`);
       }
 
       // 2. Extract fields with AI

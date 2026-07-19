@@ -11,9 +11,15 @@ import path from 'path';
  * Extrae la estructura y contenido de un archivo Word (.docx)
  * Devuelve el texto plano y las tablas encontradas
  */
-export async function extractNotebookStructure(filePath) {
-  const absolutePath = path.join(process.cwd(), 'public', filePath);
-  const buffer = await readFile(absolutePath);
+export async function extractNotebookStructure(fileData) {
+  let buffer;
+  if (fileData.startsWith('data:')) {
+    const base64Content = fileData.split(',')[1];
+    buffer = Buffer.from(base64Content, 'base64');
+  } else {
+    const absolutePath = path.join(process.cwd(), 'public', fileData);
+    buffer = await readFile(absolutePath);
+  }
 
   // Extraer HTML para analizar tablas
   const htmlResult = await mammoth.convertToHtml({ buffer });
